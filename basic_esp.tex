@@ -1,0 +1,524 @@
+\documentclass[12pt,a4paper]{article}
+\usepackage[utf8]{inputenc}
+\usepackage[bahasa]{babel}
+\usepackage{amsmath}
+\usepackage{amsfonts}
+\usepackage{amssymb}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{listings}
+\usepackage{geometry}
+\usepackage{hyperref}
+\usepackage{tcolorbox}
+\usepackage{enumitem}
+
+\geometry{left=2.5cm,right=2.5cm,top=2.5cm,bottom=2.5cm}
+
+% Setup untuk kode
+\definecolor{codegreen}{rgb}{0,0.6,0}
+\definecolor{codegray}{rgb}{0.5,0.5,0.5}
+\definecolor{codepurple}{rgb}{0.58,0,0.82}
+\definecolor{backcolour}{rgb}{0.95,0.95,0.92}
+
+\lstdefinestyle{mystyle}{
+    backgroundcolor=\color{backcolour},   
+    commentstyle=\color{codegreen},
+    keywordstyle=\color{magenta},
+    numberstyle=\tiny\color{codegray},
+    stringstyle=\color{codepurple},
+    basicstyle=\ttfamily\footnotesize,
+    breakatwhitespace=false,         
+    breaklines=true,                 
+    captionpos=b,                    
+    keepspaces=true,                 
+    numbers=left,                    
+    numbersep=5pt,                  
+    showspaces=false,                
+    showstringspaces=false,
+    showtabs=false,                  
+    tabsize=2
+}
+
+\lstset{style=mystyle}
+
+\title{\textbf{Materi Dasar Pemrograman ESP32}}
+\author{Pelatihan IEEE 2025}
+\date{\today}
+
+\begin{document}
+
+\maketitle
+\tableofcontents
+\newpage
+
+\section{Dasar-Dasar Pemrograman ESP32}
+
+\subsection{Contoh Program 1: Blink LED Internal}
+
+\subsubsection{Kode Program}
+\begin{lstlisting}[language=C++, caption={Program Blink LED}]
+void setup() {
+  pinMode(2, OUTPUT);  // GPIO2 = LED internal di board ESP32
+}
+
+void loop() {
+  digitalWrite(2, HIGH);  // Nyalakan LED
+  delay(1000);            // Tunggu 1 detik
+  digitalWrite(2, LOW);   // Matikan LED
+  delay(1000);            // Tunggu 1 detik
+}
+\end{lstlisting}
+
+\subsubsection{Penjelasan Kode}
+\begin{itemize}
+    \item \texttt{void setup()}: Fungsi yang dijalankan sekali saat ESP32 pertama kali dinyalakan atau di-reset
+    \item \texttt{pinMode(2, OUTPUT)}: Mengonfigurasi GPIO pin 2 sebagai output. Parameter pertama adalah nomor pin, parameter kedua adalah mode (OUTPUT/INPUT)
+    \item \texttt{void loop()}: Fungsi yang dijalankan berulang-ulang setelah \texttt{setup()} selesai
+    \item \texttt{digitalWrite(2, HIGH)}: Memberikan tegangan HIGH (3.3V) pada pin 2, membuat LED menyala
+    \item \texttt{delay(1000)}: Menghentikan eksekusi program selama 1000 milidetik (1 detik)
+    \item \texttt{digitalWrite(2, LOW)}: Memberikan tegangan LOW (0V) pada pin 2, membuat LED mati
+\end{itemize}
+
+\begin{tcolorbox}[colback=blue!5!white,colframe=blue!75!black,title=Hasil]
+LED internal berkedip setiap 1 detik (nyala 1 detik, mati 1 detik).
+\end{tcolorbox}
+
+\newpage
+\section{Pertemuan 2: Input \& Output Digital}
+
+\subsection{Tujuan}
+\begin{itemize}
+    \item Menggunakan tombol (push button) sebagai input
+    \item Mengendalikan LED dengan tombol
+    \item Memahami konsep debouncing sederhana
+\end{itemize}
+
+\subsection{Komponen di Wokwi}
+\begin{itemize}
+    \item ESP32
+    \item 1 Push Button
+    \item 1 LED
+    \item 1 Resistor (220 $\Omega$)
+\end{itemize}
+
+\textbf{Catatan:} Aktifkan internal pull-up agar tidak perlu resistor tambahan pada tombol.
+
+\subsection{Contoh Program 2: LED ON saat Tombol Ditekan}
+
+\subsubsection{Kode Program}
+\begin{lstlisting}[language=C++, caption={Kontrol LED dengan Tombol}]
+const int ledPin = 2;
+const int buttonPin = 4;
+
+void setup() {
+  pinMode(ledPin, OUTPUT);
+  pinMode(buttonPin, INPUT_PULLUP); // tombol aktif LOW
+}
+
+void loop() {
+  int tombol = digitalRead(buttonPin); // baca status tombol
+  if (tombol == LOW) { // ditekan
+    digitalWrite(ledPin, HIGH);
+  } else {
+    digitalWrite(ledPin, LOW);
+  }
+}
+\end{lstlisting}
+
+\subsubsection{Penjelasan Kode}
+\begin{itemize}
+    \item \texttt{const int ledPin = 2}: Mendefinisikan konstanta untuk pin LED (tidak dapat diubah)
+    \item \texttt{const int buttonPin = 4}: Mendefinisikan konstanta untuk pin tombol
+    \item \texttt{pinMode(buttonPin, INPUT\_PULLUP)}: Mengaktifkan resistor pull-up internal ESP32 (sekitar 45k$\Omega$). Ini membuat pin dalam kondisi HIGH secara default
+    \item \texttt{digitalRead(buttonPin)}: Membaca status digital pin tombol (HIGH atau LOW)
+    \item \texttt{if (tombol == LOW)}: Karena menggunakan INPUT\_PULLUP, tombol yang ditekan akan memberikan nilai LOW (ground)
+    \item Logika: Jika tombol ditekan (LOW), LED menyala. Jika tidak ditekan (HIGH), LED mati
+\end{itemize}
+
+\newpage
+\section{Analog Input (Sensor Potensiometer)}
+
+\subsection{Tujuan}
+\begin{itemize}
+    \item Membaca nilai analog menggunakan \texttt{analogRead()}
+    \item Menampilkan hasil ke Serial Monitor
+\end{itemize}
+
+\subsection{Komponen}
+\begin{itemize}
+    \item ESP32
+    \item Potensiometer (hubungkan ke pin 34 atau 35)
+    \item LED (opsional)
+\end{itemize}
+
+\subsection{Kode: Membaca Potensiometer}
+\begin{lstlisting}[language=C++, caption={Membaca Nilai Analog}]
+const int potPin = 34;
+
+void setup() {
+  Serial.begin(115200); // buka komunikasi serial
+}
+
+void loop() {
+  int nilai = analogRead(potPin);
+  Serial.println(nilai);
+  delay(200);
+}
+\end{lstlisting}
+
+\subsection{Penjelasan Kode}
+\begin{itemize}
+    \item \texttt{Serial.begin(115200)}: Menginisialisasi komunikasi serial dengan baud rate 115200 bps (bit per second)
+    \item \texttt{analogRead(potPin)}: Membaca nilai analog dari pin 34. ESP32 memiliki ADC (Analog to Digital Converter) 12-bit
+    \item \textbf{Rentang nilai}: 0 - 4095 ($2^{12} = 4096$ level)
+    \begin{itemize}
+        \item 0 = 0V
+        \item 4095 = 3.3V
+    \end{itemize}
+    \item \texttt{Serial.println(nilai)}: Mengirim nilai ke Serial Monitor dengan baris baru
+    \item \texttt{delay(200)}: Menunda 200ms agar output tidak terlalu cepat
+\end{itemize}
+
+\begin{tcolorbox}[colback=green!5!white,colframe=green!75!black,title=Catatan]
+Nilai ADC ESP32: \textbf{0--4095} (0--3.3V). Dapat digunakan untuk mengatur kecepatan motor, kecerahan LED, dll.
+\end{tcolorbox}
+
+\newpage
+\section{PWM (Pulse Width Modulation)}
+
+\subsection{Mengatur Kecerahan LED}
+
+\subsubsection{Kode Program}
+\begin{lstlisting}[language=C++, caption={Kontrol Kecerahan LED dengan PWM}]
+int ledPin = 2; //deklarasi pin led1
+
+void setup() {
+  pinMode(ledPin, OUTPUT); //pin led dijadikan sebagai pin output
+  Serial.begin(9600); //memulai komunikasi ke serial monitor
+}
+
+void loop() {
+  analogWrite(ledPin, 0); //led mati
+  delay(2000);
+  analogWrite(ledPin, 50); //led nyala redup
+  delay(2000);
+  analogWrite(ledPin, 255); //led nyala terang
+  delay(2000);
+  analogWrite(ledPin, 50); //led nyala redup
+  delay(2000); //PWM dari mati, nyala redup, terang, redup
+}
+\end{lstlisting}
+
+\subsubsection{Penjelasan Kode}
+\begin{itemize}
+    \item \textbf{PWM (Pulse Width Modulation)}: Teknik untuk mengontrol daya dengan mengubah duty cycle sinyal digital
+    \item \texttt{analogWrite(pin, value)}: Menghasilkan sinyal PWM pada pin
+    \begin{itemize}
+        \item \textbf{value = 0}: LED mati (0\% duty cycle)
+        \item \textbf{value = 50}: LED redup ($\approx$20\% duty cycle)
+        \item \textbf{value = 255}: LED terang penuh (100\% duty cycle)
+    \end{itemize}
+    \item Nilai PWM: \textbf{0-255} (8-bit)
+    \item ESP32 memiliki 16 channel PWM dengan resolusi hingga 16-bit
+    \item Duty cycle = $\frac{\text{value}}{255} \times 100\%$
+\end{itemize}
+
+\newpage
+\section{Kontrol Servo dengan Potensiometer}
+
+\subsection{Kode Program}
+\begin{lstlisting}[language=C++, caption={Kontrol Servo Berdasarkan Potensiometer}]
+#include <ESP32Servo.h>
+
+Servo myservo;
+const int potPin = 34;
+
+void setup() {
+  myservo.attach(15); // pin servo di GPIO15
+}
+
+void loop() {
+  int potValue = analogRead(potPin);
+  int angle = map(potValue, 0, 4095, 0, 180);
+  myservo.write(angle);
+  delay(20);
+}
+\end{lstlisting}
+
+\subsection{Penjelasan Kode}
+\begin{itemize}
+    \item \texttt{\#include <ESP32Servo.h>}: Mengimpor library untuk mengontrol servo motor
+    \item \texttt{Servo myservo}: Membuat objek servo dengan nama myservo
+    \item \texttt{myservo.attach(15)}: Menghubungkan objek servo ke pin GPIO 15
+    \item \texttt{map(potValue, 0, 4095, 0, 180)}: Fungsi mapping untuk mengkonversi nilai
+    \begin{itemize}
+        \item Input: 0-4095 (nilai ADC)
+        \item Output: 0-180 (sudut servo dalam derajat)
+        \item Formula: \\
+        $\text{output} = \frac{(\text{input} - \text{inMin}) \times (\text{outMax} - \text{outMin})}{\text{inMax} - \text{inMin}} + \text{outMin}$
+    \end{itemize}
+    \item \texttt{myservo.write(angle)}: Menggerakkan servo ke sudut tertentu
+    \item \texttt{delay(20)}: Delay singkat untuk stabilisasi servo
+\end{itemize}
+
+\begin{tcolorbox}[colback=yellow!5!white,colframe=yellow!75!black,title=Catatan]
+Servo di Wokwi membutuhkan supply 5V dan sinyal pada pin yang mendukung PWM.
+\end{tcolorbox}
+
+\newpage
+\section{Komunikasi Serial}
+
+\subsection{Tujuan}
+\begin{itemize}
+    \item Memahami cara berkomunikasi dengan PC via Serial Monitor
+    \item Dapat menerima perintah teks dan mengontrol perangkat (LED/servo)
+\end{itemize}
+
+\subsection{Contoh Kode: Perintah ON/OFF LED}
+
+\begin{lstlisting}[language=C++, caption={Kontrol LED via Serial}]
+const int ledPin = 2;
+String input;
+
+void setup() {
+  Serial.begin(115200);
+  pinMode(ledPin, OUTPUT);
+  Serial.println("Ketik ON atau OFF:");
+}
+
+void loop() {
+  if (Serial.available()) {
+    input = Serial.readStringUntil('\n');
+    input.trim();
+
+    if (input == "ON") {
+      digitalWrite(ledPin, HIGH);
+      Serial.println("LED ON");
+    } else if (input == "OFF") {
+      digitalWrite(ledPin, LOW);
+      Serial.println("LED OFF");
+    } else {
+      Serial.println("Perintah tidak dikenal");
+    }
+  }
+}
+\end{lstlisting}
+
+\subsection{Penjelasan Kode}
+\begin{itemize}
+    \item \texttt{String input}: Variabel untuk menyimpan string input dari serial
+    \item \texttt{Serial.available()}: Mengecek apakah ada data yang tersedia di buffer serial (return true jika ada)
+    \item \texttt{Serial.readStringUntil('\textbackslash n')}: Membaca karakter sampai menemukan newline
+    \item \texttt{input.trim()}: Menghapus whitespace (spasi, tab, newline) di awal dan akhir string
+    \item \texttt{if (input == "ON")}: Membandingkan string input dengan "ON"
+    \item \textbf{Flow}:
+    \begin{enumerate}
+        \item Cek apakah ada data serial
+        \item Baca string sampai enter
+        \item Bersihkan spasi
+        \item Eksekusi perintah sesuai input
+    \end{enumerate}
+\end{itemize}
+
+\newpage
+\section{PROJECT AKHIR: Kontrol Servo via Perintah Serial}
+
+\subsection{Tujuan}
+Membuat sistem yang dapat menerima perintah dari Serial Monitor untuk mengontrol posisi servo (simulasi motor DC).
+
+\subsection{Komponen Wokwi}
+\begin{itemize}
+    \item ESP32 DevKit v1
+    \item Servo Motor
+    \item LED indikator (opsional)
+\end{itemize}
+
+\textbf{Hubungan pin:}
+\begin{itemize}
+    \item Servo $\rightarrow$ pin 15
+    \item LED $\rightarrow$ pin 2 (opsional)
+\end{itemize}
+
+\subsection{Kode Lengkap: Kontrol Servo via Serial}
+
+\begin{lstlisting}[language=C++, caption={Project: Kontrol Servo dengan Serial}]
+#include <Servo.h>
+
+Servo motor;
+String command;  // perintah dari serial
+int angle = 90;  // posisi awal
+
+void setup() {
+  Serial.begin(115200);
+  motor.attach(15);
+  motor.write(angle);
+  Serial.println("Ketik perintah: LEFT, RIGHT, CENTER, atau ANGLE <nilai>");
+}
+
+void loop() {
+  if (Serial.available()) {
+    command = Serial.readStringUntil('\n');
+    command.trim();
+
+    if (command == "LEFT") {
+      angle = 0;
+    } else if (command == "RIGHT") {
+      angle = 180;
+    } else if (command == "CENTER") {
+      angle = 90;
+    } else if (command.startsWith("ANGLE")) {
+      int value = command.substring(6).toInt();
+      if (value >= 0 && value <= 180) angle = value;
+    } else {
+      Serial.println("Perintah tidak dikenal");
+      return;
+    }
+
+    motor.write(angle);
+    Serial.print("Servo di posisi: ");
+    Serial.println(angle);
+  }
+}
+\end{lstlisting}
+
+\subsection{Penjelasan Kode}
+\begin{itemize}
+    \item \texttt{motor.write(angle)}: Menggerakkan servo ke posisi awal (90$^\circ$)
+    \item \texttt{command.startsWith("ANGLE")}: Mengecek apakah string dimulai dengan "ANGLE"
+    \item \texttt{command.substring(6)}: Mengambil substring mulai dari karakter ke-6 (setelah "ANGLE ")
+    \begin{itemize}
+        \item Contoh: "ANGLE 45" $\rightarrow$ substring(6) = "45"
+    \end{itemize}
+    \item \texttt{.toInt()}: Mengkonversi string menjadi integer
+    \item \textbf{Validasi}: \texttt{if (value >= 0 \&\& value <= 180)} memastikan nilai sudut valid
+    \item \texttt{return}: Keluar dari fungsi loop() jika perintah tidak dikenal
+\end{itemize}
+
+\textbf{Perintah yang didukung:}
+\begin{itemize}
+    \item \texttt{LEFT} $\rightarrow$ Servo ke 0$^\circ$
+    \item \texttt{RIGHT} $\rightarrow$ Servo ke 180$^\circ$
+    \item \texttt{CENTER} $\rightarrow$ Servo ke 90$^\circ$
+    \item \texttt{ANGLE 45} $\rightarrow$ Servo ke 45$^\circ$ (atau nilai 0-180)
+\end{itemize}
+
+\newpage
+\section{BONUS: DHT22 + OLED Display}
+
+\subsection{Kode Program}
+\begin{lstlisting}[language=C++, caption={Sensor DHT22 dengan OLED Display}]
+#include <Wire.h>
+#include <Adafruit_SSD1306.h>
+#include "DHT.h"
+
+#define SCREEN_WIDTH 128
+#define SCREEN_HEIGHT 64
+Adafruit_SSD1306 display(SCREEN_WIDTH, SCREEN_HEIGHT, &Wire, -1);
+
+#define DHTPIN 15
+#define DHTTYPE DHT22
+DHT dht(DHTPIN, DHTTYPE);
+
+void setup() {
+  Serial.begin(115200);
+  dht.begin();
+  display.begin(SSD1306_SWITCHCAPVCC, 0x3C);
+  display.clearDisplay();
+  display.setTextSize(1);
+  display.setTextColor(SSD1306_WHITE);
+}
+
+void loop() {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+
+  display.clearDisplay();
+  display.setCursor(0, 0);
+  display.println("Sensor DHT22");
+  display.print("Suhu: ");
+  display.print(t);
+  display.println(" C");
+  display.print("Lembab: ");
+  display.print(h);
+  display.println(" %");
+  display.display();
+
+  delay(2000);
+}
+\end{lstlisting}
+
+\subsection{Penjelasan Kode}
+\begin{itemize}
+    \item \texttt{\#include <Wire.h>}: Library untuk komunikasi I$^2$C
+    \item \texttt{\#include <Adafruit\_SSD1306.h>}: Library untuk OLED display SSD1306
+    \item \texttt{\#include "DHT.h"}: Library untuk sensor DHT22
+    \item \texttt{\#define SCREEN\_WIDTH 128}: Mendefinisikan lebar layar OLED (128 pixel)
+    \item \texttt{\#define SCREEN\_HEIGHT 64}: Mendefinisikan tinggi layar OLED (64 pixel)
+    \item \texttt{Adafruit\_SSD1306 display(...)}: Membuat objek display
+    \begin{itemize}
+        \item \texttt{\&Wire}: Pointer ke objek I$^2$C
+        \item \texttt{-1}: Reset pin (tidak digunakan)
+    \end{itemize}
+    \item \texttt{\#define DHTTYPE DHT22}: Menentukan tipe sensor (DHT22/DHT11)
+    \item \texttt{DHT dht(DHTPIN, DHTTYPE)}: Membuat objek sensor DHT
+    \item \texttt{display.begin(SSD1306\_SWITCHCAPVCC, 0x3C)}: 
+    \begin{itemize}
+        \item \texttt{SSD1306\_SWITCHCAPVCC}: Mode power internal
+        \item \texttt{0x3C}: Alamat I$^2$C OLED (biasanya 0x3C atau 0x3D)
+    \end{itemize}
+    \item \texttt{dht.readHumidity()}: Membaca kelembaban (float, satuan \%)
+    \item \texttt{dht.readTemperature()}: Membaca suhu (float, satuan $^\circ$C)
+    \item \texttt{display.clearDisplay()}: Membersihkan buffer display
+    \item \texttt{display.setCursor(0, 0)}: Set posisi kursor (x=0, y=0)
+    \item \texttt{display.println()}: Menampilkan teks dengan pindah baris
+    \item \texttt{display.display()}: Menampilkan buffer ke layar OLED (wajib dipanggil!)
+\end{itemize}
+
+\begin{tcolorbox}[colback=red!5!white,colframe=red!75!black,title=Catatan Penting]
+Wokwi otomatis mengenali alamat I$^2$C OLED (0x3C).
+\end{tcolorbox}
+
+\newpage
+\section{Rangkuman Konsep Penting}
+
+\subsection{Fungsi Dasar Arduino/ESP32}
+\begin{itemize}
+    \item \texttt{pinMode()} - Set mode pin
+    \item \texttt{digitalWrite()} - Tulis digital
+    \item \texttt{digitalRead()} - Baca digital
+    \item \texttt{analogWrite()} - Tulis PWM
+    \item \texttt{analogRead()} - Baca analog
+    \item \texttt{delay()} - Tunda waktu
+\end{itemize}
+
+\subsection{Komunikasi Serial}
+\begin{itemize}
+    \item \texttt{Serial.begin()} - Inisialisasi
+    \item \texttt{Serial.print()} - Kirim data
+    \item \texttt{Serial.available()} - Cek data tersedia
+    \item \texttt{Serial.readStringUntil()} - Baca string
+\end{itemize}
+
+\subsection{Tipe Data}
+\begin{itemize}
+    \item \texttt{int} - Integer (-32768 to 32767)
+    \item \texttt{float} - Bilangan desimal
+    \item \texttt{String} - Teks
+    \item \texttt{const} - Konstanta
+\end{itemize}
+
+\subsection{Struktur Kontrol}
+\begin{itemize}
+    \item \texttt{if-else} - Percabangan
+    \item \texttt{loop()} - Perulangan otomatis
+    \item \texttt{for/while} - Perulangan manual
+\end{itemize}
+
+\vspace{1cm}
+\begin{center}
+\line(1,0){400}\\
+\textbf{Dibuat untuk pembelajaran ESP32 di Wokwi Simulator}\\
+\textbf{Pelatihan IEEE 2025}
+\end{center}
+
+\end{document}
